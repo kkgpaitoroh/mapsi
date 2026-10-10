@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Ujian PAI MAPSI 2026</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-emerald-50 font-sans text-gray-800">
+    <div class="min-h-screen flex flex-col justify-between">
+        
+        <!-- Header -->
+        <header class="bg-emerald-700 text-white shadow-md p-4 text-center">
+            <h1 class="text-2xl font-bold">Simulasi Ujian PAI MAPSI 2026</h1>
+            <p class="text-sm text-emerald-100">Portal Latihan Soal Pendidikan Agama Islam</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto p-4 max-w-xl my-auto">
+            
+            <!-- Start Screen -->
+            <div id="start-screen" class="bg-white rounded-2xl shadow-xl p-6 text-center">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">📖</div>
+                <h2 class="text-xl font-bold mb-2 text-emerald-800">Selamat Datang, Peserta MAPSI 2026</h2>
+                <p class="text-gray-600 text-sm mb-4">Uji kemampuan pemahaman materi Al-Quran, Fiqh, Akidah, dan Sejarah Islam secara mandiri.</p>
+                
+                <!-- Input Nama Peserta -->
+                <div class="mb-5 text-left">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nama Lengkap Peserta:</label>
+                    <input type="text" id="participant-name" placeholder="Masukkan nama Anda..." class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                </div>
+
+                <button onclick="startQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 shadow-md">Mulai Ujian Sekarang</button>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="bg-white rounded-2xl shadow-xl p-6 hidden">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <span id="question-number" class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md">Soal 1 dari 5</span>
+                    <span id="timer" class="text-xs font-semibold text-red-600 bg-red-50 px-2.5 py-1 rounded-md">Waktu: 30s</span>
+                </div>
+                <h2 id="question-text" class="text-base font-semibold mb-5 text-gray-800 min-h-[50px]">Pertanyaan...</h2>
+                <div id="options-container" class="space-y-3 mb-6"></div>
+                <button id="next-btn" onclick="nextQuestion()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition duration-200 hidden shadow-md">Selanjutnya</button>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result-screen" class="bg-white rounded-2xl shadow-xl p-6 text-center hidden">
+                <h2 class="text-2xl font-bold text-emerald-800 mb-2">Ujian Selesai!</h2>
+                <p class="text-gray-600 text-sm mb-6">Alhamdulillah, hasil ujian Anda telah tercatat secara otomatis.</p>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-6">
+                    <p class="text-xs uppercase font-bold text-gray-500 mb-1">Perolehan Skor Akhir</p>
+                    <p id="score-display" class="text-5xl font-extrabold text-emerald-700">0</p>
+                </div>
+                <button onclick="restartQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 shadow-md">Ulangi Ujian</button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-emerald-900 text-emerald-200 text-center py-4 text-xs">
+            <p>&copy; 2026 Aplikasi Ujian PAI MAPSI. Didukung untuk Pendidikan Islam.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- ⚠️ GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA ---
+        const WEB_APP_URL = "URL_WEB_APP_ANDA_DISINI";
+
+        const questions = [
+            {
+                question: "Surat Al-Falaq terdiri dari berapa ayat dalam Al-Quran?",
+                options: ["3 ayat", "4 ayat", "5 ayat", "6 ayat"],
+                answer: 2
+            },
+            {
+                question: "Hukum bacaan Nun Sukun atau Tanwin apabila bertemu dengan huruf Ba' (ب) disebut...?",
+                options: ["Idgham Bighunnah", "Iqlab", "Ikhfa Haqiqi", "Izhar Halqi"],
+                answer: 1
+            },
+            {
+                question: "Rukun Islam yang kedua setelah mengucapkan dua kalimat syahadat adalah...?",
+                options: ["Menunaikan Zakat", "Mendirikan Shalat", "Puasa di Bulan Ramadan", "Menunaikan Haji bagi yang mampu"],
+                answer: 1
+            },
+            {
+                question: "Nabi yang diberikan mukjizat berupa tongkat yang dapat membelah lautan adalah Nabi...?",
+                options: ["Nabi Ibrahim AS", "Nabi Musa AS", "Nabi Isa AS", "Nabi Nuh AS"],
+                answer: 1
+            },
+            {
+                question: "Malaikat yang bertugas meniup sangkakala tanda dimulainya hari kiamat adalah...?",
+                options: ["Malaikat Jibril", "Malaikat Mikail", "Malaikat Israfil", "Malaikat Izrail"],
+                answer: 2
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 30;
+        let answered = false;
+        let participantName = "";
+
+        function startQuiz() {
+            const nameInput = document.getElementById('participant-name').value.trim();
+            if (!nameInput) {
+                alert("Silakan masukkan nama lengkap Anda terlebih dahulu!");
+                return;
+            }
+            participantName = nameInput;
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            resetState();
+            if (currentQuestionIndex < questions.length) {
+                document.getElementById('question-number').innerText = `Soal ${currentQuestionIndex + 1} dari ${questions.length}`;
+                const currentQ = questions[currentQuestionIndex];
+                document.getElementById('question-text').innerText = currentQ.question;
+                
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = '';
+                
+                currentQ.options.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.innerText = option;
+                    button.className = "w-full text-left p-3.5 rounded-xl border border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 transition duration-150 font-medium text-sm";
+                    button.onclick = () => selectOption(index);
+                    optionsContainer.appendChild(button);
+                });
+                startTimer();
+            } else {
+                showResult();
+            }
+        }
+
+        function resetState() {
+            clearInterval(timer);
+            timeLeft = 30;
+            document.getElementById('timer').innerText = `Waktu: ${timeLeft}s`;
+            document.getElementById('next-btn').classList.add('hidden');
+            answered = false;
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = `Waktu: ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    lockAnswers(null);
+                }
+            }, 1000);
+        }
+
+        function selectOption(selectedIndex) {
+            if (answered) return;
+            answered = true;
+            clearInterval(timer);
+            lockAnswers(selectedIndex);
+        }
+
+        function lockAnswers(selectedIndex) {
+            const currentQ = questions[currentQuestionIndex];
+            const optionsContainer = document.getElementById('options-container');
+            const buttons = optionsContainer.children;
+
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                if (i === currentQ.answer) {
+                    buttons[i].classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800', 'font-bold');
+                } else if (i === selectedIndex) {
+                    buttons[i].classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                }
+            }
+
+            if (selectedIndex === currentQ.answer) {
+                score += 20;
+            }
+
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('score-display').innerText = score;
+
+            // Kirim data nilai otomatis ke Google Sheet via Web App
+            sendScoreToGoogleSheet(participantName, score);
+        }
+
+        function sendScoreToGoogleSheet(name, finalScore) {
+            if (WEB_APP_URL === "URL_WEB_APP_ANDA_DISINI") return;
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors", // Diperlukan agar tidak terkena blokir CORS dari GitHub Pages
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ nama: name, skor: finalScore })
+            }).catch(error => {
+                console.error("Gagal mengirim nilai:", error);
+            });
+        }
+
+        function restartQuiz() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('participant-name').value = "";
+        }
+    </script>
+</body>
+</html>
