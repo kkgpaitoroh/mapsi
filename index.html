@@ -59,7 +59,7 @@
                 </div>
 
                 <!-- Header Status & Action Buttons -->
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2 sm:space-x-3">
                     <template x-if="currentScreen === 'exam'">
                         <div class="flex items-center space-x-4 bg-slate-100 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700">
                             <span class="text-xs text-slate-500 hidden sm:inline">Sisa Waktu:</span>
@@ -70,9 +70,16 @@
                         </div>
                     </template>
 
-                    <button @click="openAIGeneratorModal()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-brand-700 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-2 border border-emerald-200">
+                    <!-- Import Word / PDF Button -->
+                    <button @click="openImportModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 border border-blue-200" title="Impor Soal dari Word/PDF">
+                        <i class="fa-solid fa-file-import text-blue-600"></i>
+                        <span class="hidden md:inline">Import Word/PDF</span>
+                    </button>
+
+                    <!-- AI Prompt Generator Button -->
+                    <button @click="openAIGeneratorModal()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-brand-700 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 border border-emerald-200">
                         <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
-                        <span>Buat Soal AI</span>
+                        <span class="hidden sm:inline">Buat Soal AI</span>
                     </button>
 
                     <button @click="openSettingsModal()" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition" title="Pengaturan API & Integrasi Google Sheet">
@@ -92,22 +99,28 @@
             <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-brand-900 to-emerald-900 text-white p-6 sm:p-10 shadow-xl">
                 <div class="relative z-10 max-w-2xl">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-4">
-                        <i class="fa-solid fa-sparkles mr-1.5"></i> Siap Diases Kapan Saja
+                        <i class="fa-solid fa-sparkles mr-1.5"></i> Fitur Baru: Impor Langsung dari Dokumen
                     </span>
                     <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3 leading-tight">
-                        Platform Ujian Online & Latihan Soal Interaktif
+                        Platform Ujian Online & Generator Kuis Interaktif
                     </h2>
                     <p class="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
-                        Pilih paket latihan yang sudah tersedia (termasuk MAPSI SD PAI & BTQ) atau buat kuis kustom baru berbasis AI secara otomatis!
+                        Pilih paket latihan yang tersedia, **impor file naskah soal Word/PDF Anda**, atau buat kuis baru berbasis AI secara instan!
                     </p>
                     <div class="flex flex-wrap gap-3">
                         <button @click="startPresetExam('mapsi')" class="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition flex items-center space-x-2 text-sm sm:text-base">
                             <i class="fa-solid fa-play"></i>
-                            <span>Mulai Simulasi MAPSI SD (100 Soal)</span>
+                            <span>Mulai Simulasi MAPSI SD</span>
                         </button>
+
+                        <button @click="openImportModal()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition text-sm sm:text-base flex items-center space-x-2">
+                            <i class="fa-solid fa-file-word"></i>
+                            <span>Import Soal dari Word/PDF</span>
+                        </button>
+
                         <button @click="openAIGeneratorModal()" class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold rounded-xl transition text-sm sm:text-base flex items-center space-x-2">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Buat Ujian Topik Lain</span>
+                            <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                            <span>Buat Topik AI</span>
                         </button>
                     </div>
                 </div>
@@ -122,7 +135,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center space-x-2">
                         <i class="fa-solid fa-list-check text-brand-600"></i>
-                        <span>Pilihan Paket Ujian Available</span>
+                        <span>Pilihan Paket Ujian Tersedia</span>
                     </h3>
                     <span class="text-xs text-slate-500" x-text="presetExams.length + ' Paket Tersedia'"></span>
                 </div>
@@ -135,7 +148,7 @@
                                     <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
                                         :class="{
                                             'bg-emerald-100 text-emerald-800': exam.category === 'MAPSI SD',
-                                            'bg-blue-100 text-blue-800': exam.category === 'Umum',
+                                            'bg-blue-100 text-blue-800': exam.category === 'Impor Word/PDF' || exam.category === 'Umum',
                                             'bg-purple-100 text-purple-800': exam.category === 'AI Generated'
                                         }"
                                         x-text="exam.category">
@@ -213,7 +226,7 @@
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
                         <h2 class="text-base sm:text-lg font-bold text-slate-900" x-text="activeExam?.title || ''"></h2>
-                        <p class="text-xs text-slate-500" x-text="'Materi: ' + (currentQuestion?.category || 'PAI & BTQ')"></p>
+                        <p class="text-xs text-slate-500" x-text="'Materi: ' + (currentQuestion?.category || 'Umum')"></p>
                     </div>
                     <div class="text-right">
                         <span class="text-xs text-slate-400 block">Progres</span>
@@ -283,7 +296,7 @@
                 </div>
             </div>
 
-            <!-- Question Grid Drawer / Sidebar (Right 1 col) -->
+            <!-- Question Grid Sidebar -->
             <div class="space-y-6">
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
@@ -387,6 +400,190 @@
                         <span class="text-xs text-slate-400 block font-semibold">Waktu Tempuh</span>
                         <span class="text-lg font-bold text-slate-700" x-text="lastReport?.timeTaken || '-'"></span>
                     </div>
+                </div>
+
+                <div class="pt-8 flex flex-wrap justify-center gap-3">
+                    <button @click="toggleReviewMode()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-2">
+                        <i class="fa-solid fa-eye"></i>
+                        <span x-text="showReview ? 'Sembunyikan Pembahasan' : 'Lihat Pembahasan Soal'"></span>
+                    </button>
+                    <button @click="goHome()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs sm:text-sm transition flex items-center space-x-2">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Kembali ke Beranda</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Review Questions Accordion -->
+            <div x-show="showReview" class="space-y-4">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-clipboard-check text-brand-600"></i>
+                    <span>Pembahasan & Kunci Jawaban Lengkap</span>
+                </h3>
+
+                <template x-for="(q, index) in (lastReport?.questions || [])" :key="index">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-start justify-between">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-md"
+                                :class="lastReport.userAnswers[index] === q.correctAnswer ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'"
+                                x-text="'Soal #' + (index + 1) + ' - ' + (lastReport.userAnswers[index] === q.correctAnswer ? 'BENAR' : 'SALAH')">
+                            </span>
+                            <span class="text-xs text-slate-400" x-text="q.category"></span>
+                        </div>
+
+                        <p class="text-sm font-semibold text-slate-800" x-text="q.question"></p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                            <template x-for="(opt, optIdx) in q.options" :key="optIdx">
+                                <div class="p-2.5 rounded-lg text-xs flex items-center space-x-2 border"
+                                    :class="{
+                                        'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold': optIdx === q.correctAnswer,
+                                        'bg-red-50 border-red-300 text-red-900': optIdx === lastReport.userAnswers[index] && optIdx !== q.correctAnswer,
+                                        'bg-slate-50 border-slate-200 text-slate-600': optIdx !== q.correctAnswer && optIdx !== lastReport.userAnswers[index]
+                                    }">
+                                    <span class="w-5 h-5 rounded flex items-center justify-center font-bold text-[10px]"
+                                        :class="optIdx === q.correctAnswer ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'"
+                                        x-text="String.fromCharCode(65 + optIdx)"></span>
+                                    <span x-text="opt"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-100">
+                            <span class="font-bold text-brand-700 block mb-0.5"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> Pembahasan:</span>
+                            <span x-text="q.explanation"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: IMPOR SOAL DARI WORD / PDF / TEKS -->
+    <div x-show="showImportModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar" @click.away="showImportModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-file-word"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Import Soal dari Word / PDF</h3>
+                        <p class="text-xs text-slate-500">Salin (*copy*) teks dari dokumen Anda lalu tempel di sini.</p>
+                    </div>
+                </div>
+                <button @click="showImportModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <form @submit.prevent="processImportedText()" class="space-y-4 text-xs sm:text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label class="block font-semibold text-slate-700 mb-1">Judul Ujian *</label>
+                        <input type="text" x-model="importPrompt.title" placeholder="Contoh: Ujian Akhir Semester Fiqih Kelas 6" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Durasi (Menit)</label>
+                        <input type="number" x-model="importPrompt.duration" min="5" max="180" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>Tempelkan Teks Soal dari Word/PDF di Bawah *</span>
+                        <span class="text-[11px] text-blue-600 font-normal">Format nomor & pilihan A/B/C/D bebas</span>
+                    </label>
+                    <textarea x-model="importPrompt.text" rows="8" placeholder="Contoh salinan naskah Word/PDF:
+
+1. Surah Al-Fatihah terdiri dari berapa ayat?
+a. 5 ayat
+b. 6 ayat
+c. 7 ayat
+d. 8 ayat
+Kunci: C
+
+2. Malaikat yang bertugas menyampaikan wahyu adalah...
+A. Jibril
+B. Mikail
+C. Israfil
+D. Izrail
+" required class="w-full p-3.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none font-mono text-xs leading-relaxed"></textarea>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs text-blue-800 flex items-start space-x-2">
+                    <i class="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>
+                    <div>
+                        <strong>Tips Impor:</strong> AI akan secara otomatis memisahkan pertanyaan, opsi A/B/C/D, kunci jawaban (jika ada), serta menambahkan pembahasan otomatis.
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+                    <button type="button" @click="showImportModal = false" class="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">Batal</button>
+                    <button type="submit" :disabled="isImporting" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-md shadow-blue-500/20 transition flex items-center space-x-2">
+                        <i class="fa-solid" :class="isImporting ? 'fa-spinner animate-spin' : 'fa-wand-magic-sparkles'"></i>
+                        <span x-text="isImporting ? 'Memproses Teks Dokumen...' : 'Konversi & Buat Ujian'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 1: AI QUESTION GENERATOR -->
+    <div x-show="showAIGeneratorModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5" @click.away="showAIGeneratorModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">Buat Ujian Baru (AI Generator)</h3>
+                </div>
+                <button @click="showAIGeneratorModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <form @submit.prevent="generateQuestionsWithAI()" class="space-y-4 text-xs sm:text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Topik atau Materi Ujian *</label>
+                    <input type="text" x-model="aiPrompt.topic" placeholder="Contoh: Tata Cara Sholat & Wudhu, Sejarah Indonesia Kuno" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tingkat / Jenjang</label>
+                        <select x-model="aiPrompt.grade" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+                            <option value="SD">SD / MI</option>
+                            <option value="SMP">SMP / MTs</option>
+                            <option value="SMA">SMA / MA / SMK</option>
+                            <option value="Kuliah/Umum">Kuliah / Umum</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Jumlah Soal</label>
+                        <select x-model="aiPrompt.count" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+                            <option value="5">5 Soal</option>
+                            <option value="10">10 Soal</option>
+                            <option value="15">15 Soal</option>
+                            <option value="20">20 Soal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Durasi Ujian (Menit)</label>
+                    <input type="number" x-model="aiPrompt.duration" min="5" max="120" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+                    <button type="button" @click="showAIGeneratorModal = false" class="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">Batal</button>
+                    <button type="submit" :disabled="isGeneratingAI" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-md shadow-brand-500/20 transition flex items-center space-x-2">
+                        <i class="fa-solid" :class="isGeneratingAI ? 'fa-spinner animate-spin' : 'fa-sparkles'"></i>
+                        <span x-text="isGeneratingAI ? 'Sedang Memproses AI...' : 'Generate Soal Sekarang'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL 2: SETTINGS (API KEY & GOOGLE SHEET WEBHOOK) -->
     <div x-show="showSettingsModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5" @click.away="showSettingsModal = false">
@@ -500,40 +697,57 @@
             return {
                 currentScreen: 'dashboard', // 'dashboard', 'exam', 'report'
                 showAIGeneratorModal: false,
+                showImportModal: false,
                 showSettingsModal: false,
                 showIdentityModal: false,
                 showScriptModal: false,
                 isGeneratingAI: false,
+                isImporting: false,
                 apiKey: localStorage.getItem('examiq_gemini_key') || '',
 
                 // Google Sheets Webhook State
                 webhookUrl: localStorage.getItem('examiq_gsheet_url') || '',
-                syncStatus: 'idle', // 'idle', 'sending', 'success', 'failed'
+                syncStatus: 'idle',
                 studentInfo: JSON.parse(localStorage.getItem('examiq_student_info') || '{"name":"","classNum":""}'),
                 pendingExam: null,
 
-                // Apps Script Code Template
-                appsScriptTemplate: `function doPost(e) {
+                appsScriptTemplate: `function doGet(e) {
+  return ContentService.createTextOutput("Web App Rekap Nilai ExamiQ Berjalan Aktif! (Siap menerima data POST hasil ujian)").setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getActiveSheet();
     var data = JSON.parse(e.postData.contents);
     
-    // Buat header otomatis jika tabel masih kosong
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["Waktu", "Nama Peserta", "Kelas / Absen", "Judul Ujian", "Skor", "Benar", "Salah", "Waktu Tempuh"]);
-      sheet.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#dcfce7");
+      sheet.appendRow(["Waktu Selesai", "Nama Peserta", "Kelas / No. Absen", "Judul Ujian", "Skor (0-100)", "Benar", "Salah", "Durasi Tempuh", "Status KKM"]);
+      sheet.getRange(1, 1, 1, 9).setFontWeight("bold").setBackground("#15803d").setFontColor("#ffffff").setHorizontalAlignment("center");
     }
     
+    var score = Number(data.score) || 0;
+    var status = score >= 75 ? "LULUS" : "REMIDIAL";
+    
     sheet.appendRow([
-      data.timestamp || new Date().toLocaleString(),
-      data.studentName || "-",
+      data.timestamp || new Date().toLocaleString("id-ID"),
+      data.studentName || "Anonim",
       data.studentClass || "-",
       data.examTitle || "-",
-      data.score || 0,
+      score,
       data.correctCount || 0,
       data.wrongCount || 0,
-      data.timeTaken || "-"
+      data.timeTaken || "-",
+      status
     ]);
+    
+    var lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 5, 1, 5).setHorizontalAlignment("center");
+    
+    if (lastRow > 1) {
+      var dataRange = sheet.getRange(2, 1, lastRow - 1, 9);
+      dataRange.sort({ column: 5, ascending: false });
+    }
     
     return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
@@ -541,7 +755,6 @@
   }
 }`,
 
-                // Current active exam session state
                 activeExam: null,
                 currentQuestionIndex: 0,
                 userAnswers: {},
@@ -556,6 +769,13 @@
                     grade: 'SD',
                     count: '10',
                     duration: 15
+                },
+
+                // Import Prompt Model for Word/PDF
+                importPrompt: {
+                    title: '',
+                    duration: 30,
+                    text: ''
                 },
 
                 // Final Report state
@@ -576,7 +796,7 @@
                 // Saved history
                 examHistory: JSON.parse(localStorage.getItem('examiq_history') || '[]'),
 
-                // Built-in MAPSI SD PAI & BTQ Bank (100 Questions Sample Dataset based on provided Syllabus)
+                // Built-in MAPSI SD PAI & BTQ Bank
                 presetExams: [
                     {
                         id: 'mapsi-sd-100',
@@ -585,49 +805,47 @@
                         description: 'Soal komprehensif Al-Qur\'an Hadits, Aqidah, Akhlak, Fiqih, Sejarah Peradaban Islam, dan Tajwid BTQ.',
                         timeMinutes: 60,
                         questions: [
-                            // Al-Qur'an Hadits
                             {
                                 question: 'Surah Al-Fātiḥah merupakan surah pertama dalam Al-Qur\'an yang dinamakan Ummul Qur\'an. Kata "Al-Fātiḥah" secara bahasa artinya adalah ...',
                                 options: ['Pertolongan', 'Pembukaan', 'Pembersihan', 'Kenikmatan'],
                                 correctAnswer: 1,
                                 category: 'Al-Qur\'an Hadits',
-                                explanation: 'Al-Fātiḥah berasal dari kata fataḥa yang berarti pembukaan, karena letaknya di awal Al-Qur\'an.'
+                                explanation: 'Al-Fātiḥah berasal dari kata fataḥa yang berarti pembukaan.'
                             },
                             {
                                 question: 'Surah An-Nās mengajarkan kita untuk memohon perlindungan kepada Allah dari kejahatan ...',
                                 options: ['Sihir dan dengki', 'Setan dan bisikan manusia', 'Pencuri dan pembegal', 'Bencana alam'],
                                 correctAnswer: 1,
                                 category: 'Al-Qur\'an Hadits',
-                                explanation: 'Surah An-Nās menjelaskan perlindungan dari bisikan (was-was) setan dan manusia.'
+                                explanation: 'Surah An-Nās menjelaskan perlindungan dari bisikan setan dan manusia.'
                             },
                             {
                                 question: 'Lafal "Qul huwallāhu aḥad" terdapat dalam surah Al-Ikhlāṣ yang menjelaskan tentang esensi pokok ajaran ...',
                                 options: ['Tauhid / Keesaan Allah', 'Hari Akhir', 'Kisah Para Nabi', 'Zakat dan Sedekah'],
                                 correctAnswer: 0,
                                 category: 'Al-Qur\'an Hadits',
-                                explanation: 'Surah Al-Ikhlas menegaskan kemurnian tauhid bahwa Allah itu Maha Esa.'
+                                explanation: 'Surah Al-Ikhlas menegaskan kemurnian tauhid.'
                             },
                             {
                                 question: 'Surah Al-Mā\'ūn menyebutkan ciri-ciri orang yang mendustakan agama, salah satunya adalah ...',
                                 options: ['Suka berganti pakaian', 'Menghardik anak yatim', 'Malas bekerja', 'Tidur berlebihan'],
                                 correctAnswer: 1,
                                 category: 'Al-Qur\'an Hadits',
-                                explanation: 'Salah satu ciri pendusta agama dalam surah Al-Mā\'ūn adalah menghardik anak yatim dan enggan menolong.'
+                                explanation: 'Ciri pendusta agama dalam Al-Mā\'ūn adalah menghardik anak yatim.'
                             },
                             {
-                                question: 'Pasukan bergajah yang dipimpin Abrahah untuk menghancurkan Ka\'bah dihancurkan oleh Allah menggunakan burung Ababil sebagaimana dikisahkan dalam surah ...',
+                                question: 'Pasukan bergajah yang dipimpin Abrahah dihancurkan oleh Allah menggunakan burung Ababil sebagaimana dikisahkan dalam surah ...',
                                 options: ['Al-Qāri\'ah', 'Al-Fīl', 'Al-Qadr', 'Al-Humazah'],
                                 correctAnswer: 1,
                                 category: 'Al-Qur\'an Hadits',
                                 explanation: 'Surah Al-Fīl menceritakan peristiwa pasukan bergajah Abrahah.'
                             },
-                            // Aqidah
                             {
                                 question: 'Allah SWT memiliki As-Samī\' yang berarti Allah Maha ...',
                                 options: ['Melihat', 'Mendengar', 'Mengetahui', 'Penyayang'],
                                 correctAnswer: 1,
                                 category: 'Aqidah',
-                                explanation: 'As-Samī\' adalah Asmaul Husna yang artinya Maha Mendengar.'
+                                explanation: 'As-Samī\' artinya Maha Mendengar.'
                             },
                             {
                                 question: 'Malaikat yang bertugas menyampaikan wahyu kepada para Nabi dan Rasul adalah Malaikat ...',
@@ -641,9 +859,8 @@
                                 options: ['Musa a.s', 'Isa a.s', 'Daud a.s', 'Muhammad saw'],
                                 correctAnswer: 3,
                                 category: 'Aqidah',
-                                explanation: 'Al-Qur\'an diturunkan kepada Nabi Muhammad saw sebagai kitab suci terakhir.'
+                                explanation: 'Al-Qur\'an diturunkan kepada Nabi Muhammad saw.'
                             },
-                            // Akhlak
                             {
                                 question: 'Sikap merasakan apa yang dirasakan oleh orang lain dan ikut membantu kesusahan mereka dinamakan sikap ...',
                                 options: ['Empati', 'Sombong', 'Riya', 'Apatis'],
@@ -656,24 +873,22 @@
                                 options: ['Takabur', 'Bersyukur', 'Mengeluh', 'Pamer'],
                                 correctAnswer: 1,
                                 category: 'Akhlak',
-                                explanation: 'Hamdalah adalah kalimat thoyyibah ungkapan rasa syukur atas nikmat Allah.'
+                                explanation: 'Hamdalah adalah kalimat ungkapan rasa syukur.'
                             },
-                            // Fiqih
                             {
                                 question: 'Panggilan atau penanda bahwasanya waktu salat fardu telah masuk disebut ...',
                                 options: ['Ikamah', 'Azan', 'Khutbah', 'Takbiratul Ihram'],
                                 correctAnswer: 1,
                                 category: 'Fiqih',
-                                explanation: 'Azan adalah panggilan penanda masuknya waktu salat fardu.'
+                                explanation: 'Azan adalah panggilan penanda waktu salat.'
                             },
                             {
                                 question: 'Bersuci dari hadas kecil menggunakan air bersih atau mengusapkan debu suci (tayamum) disebut ...',
                                 options: ['Istinja', 'Wudu', 'Bersuci (Thaharah)', 'Mandi Janabah'],
                                 correctAnswer: 2,
                                 category: 'Fiqih',
-                                explanation: 'Thaharah secara umum artinya bersuci dari hadas dan najis.'
+                                explanation: 'Thaharah artinya bersuci dari hadas dan najis.'
                             },
-                            // SPI & BTQ
                             {
                                 question: 'Nabi pertama yang diciptakan oleh Allah SWT sekaligus manusia pertama di bumi adalah ...',
                                 options: ['Nabi Nuh a.s', 'Nabi Ibrahim a.s', 'Nabi Adam a.s', 'Nabi Idris a.s'],
@@ -686,18 +901,89 @@
                                 options: ['Izhar Halqi', 'Iqlab', 'Idgham Bigunnah', 'Ikhfa Haqiqi'],
                                 correctAnswer: 1,
                                 category: 'BTQ (Tajwid)',
-                                explanation: 'Nun sukun bertemu ba dinamakan Iqlab (suara nun diganti mim sukun).'
+                                explanation: 'Nun sukun bertemu ba dinamakan Iqlab.'
                             },
                             {
                                 question: 'Hukum bacaan Qalqalah artinya bunyi huruf yang memantul. Salah satu huruf qalqalah adalah ...',
                                 options: ['Qaf (ق)', 'Sin (س)', 'Mim (م)', 'Lam (ل)'],
                                 correctAnswer: 0,
                                 category: 'BTQ (Tajwid)',
-                                explanation: 'Huruf Qalqalah ada 5: Baju Di Toko (ب, ج, د, ط, ق).'
+                                explanation: 'Huruf Qalqalah ada 5: ب, ج, د, ط, ق.'
                             }
                         ]
                     }
                 ],
+
+                // Process Imported Text from Word/PDF using AI Parser
+                async processImportedText() {
+                    if (!this.importPrompt.text || !this.importPrompt.title) return;
+                    this.isImporting = true;
+
+                    const promptText = `Berikut adalah teks mentah naskah soal yang disalin dari dokumen Word atau PDF:
+
+"""
+${this.importPrompt.text}
+"""
+
+Tugas Anda:
+1. Analisis teks di atas dan ekstrak seluruh soal pilihan ganda.
+2. Identifikasi kalimat pertanyaan, 4 pilihan jawaban (A, B, C, D), kunci jawaban benar (jika tidak ada di teks, pilih jawaban yang paling tepat secara akademis), dan berikan pembahasan singkat.
+3. Luarkan HASIL DENGAN FORMAT JSON MURNI sesuai contoh struktur ini:
+{
+  "title": "${this.importPrompt.title}",
+  "questions": [
+    {
+      "question": "Teks pertanyaan soal",
+      "options": ["Opsi A", "Opsi B", "Opsi C", "Opsi D"],
+      "correctAnswer": 0,
+      "category": "Impor Dokumen",
+      "explanation": "Penjelasan singkat kunci jawaban"
+    }
+  ]
+}`;
+
+                    try {
+                        const key = this.apiKey || "";
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`;
+                        
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: promptText }] }],
+                                generationConfig: { responseMimeType: "application/json" }
+                            })
+                        });
+
+                        const result = await response.json();
+                        const rawJson = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (rawJson) {
+                            const parsed = JSON.parse(rawJson);
+                            const newExam = {
+                                id: 'import-exam-' + Date.now(),
+                                title: parsed.title || this.importPrompt.title,
+                                category: 'Impor Word/PDF',
+                                description: `Soal diimpor dari naskah dokumen Word/PDF (${parsed.questions?.length || 0} Soal)`,
+                                timeMinutes: parseInt(this.importPrompt.duration) || 30,
+                                questions: parsed.questions
+                            };
+
+                            this.presetExams.unshift(newExam);
+                            this.showImportModal = false;
+                            this.importPrompt.text = '';
+                            this.importPrompt.title = '';
+                            this.selectAndStartExam(newExam);
+                        } else {
+                            alert('Gagal mengurai teks dokumen. Pastikan teks berisi nomor soal dan opsi jawaban yang jelas.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Terjadi kesalahan saat memproses teks dokumen.');
+                    } finally {
+                        this.isImporting = false;
+                    }
+                },
 
                 async generateQuestionsWithAI() {
                     if (!this.aiPrompt.topic) return;
@@ -750,7 +1036,7 @@
                             this.showAIGeneratorModal = false;
                             this.selectAndStartExam(newExam);
                         } else {
-                            alert('Gagal meregenerasi soal dari AI. Pastikan format atau jaringan stabil.');
+                            alert('Gagal meregenerasi soal dari AI. Pastikan koneksi internet stabil.');
                         }
                     } catch (err) {
                         console.error(err);
@@ -879,13 +1165,11 @@
                         studentClass: this.studentInfo.classNum || '-'
                     };
 
-                    // Save history
                     this.examHistory.unshift(this.lastReport);
                     localStorage.setItem('examiq_history', JSON.stringify(this.examHistory.slice(0, 10)));
 
                     this.currentScreen = 'report';
 
-                    // Send data to Google Sheet Webhook if configured
                     if (this.webhookUrl) {
                         this.sendToGoogleSheet(this.lastReport);
                     } else {
@@ -909,7 +1193,6 @@
                     };
 
                     try {
-                        // Using text/plain mode to bypass CORS pre-flight constraints on Google Apps Script
                         await fetch(this.webhookUrl, {
                             method: 'POST',
                             mode: 'no-cors',
@@ -926,7 +1209,7 @@
                 getSyncStatusLabel() {
                     switch (this.syncStatus) {
                         case 'sending': return 'Mengirim hasil ujian ke Google Sheet Admin...';
-                        case 'success': return 'Tersinkronisasi ke Google Sheet Admin!';
+                        case 'success': return 'Tersinkronisasi & Diurutkan di Google Sheet!';
                         case 'failed': return 'Gagal mengirim hasil ke Google Sheet. Cek URL Webhook.';
                         default: return this.webhookUrl ? 'Siap disinkronkan ke Google Sheet.' : 'Google Sheet Admin belum dikonfigurasi.';
                     }
@@ -945,6 +1228,10 @@
                 goHome() {
                     if (this.timerInterval) clearInterval(this.timerInterval);
                     this.currentScreen = 'dashboard';
+                },
+
+                openImportModal() {
+                    this.showImportModal = true;
                 },
 
                 openAIGeneratorModal() {
