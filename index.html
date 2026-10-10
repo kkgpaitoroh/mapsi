@@ -75,7 +75,7 @@
                         <span>Buat Soal AI</span>
                     </button>
 
-                    <button @click="openSettingsModal()" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition" title="Pengaturan API Key">
+                    <button @click="openSettingsModal()" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition" title="Pengaturan API & Integrasi Google Sheet">
                         <i class="fa-solid fa-gear text-lg"></i>
                     </button>
                 </div>
@@ -350,6 +350,29 @@
                     <span class="text-slate-400 text-xl font-bold">/100</span>
                 </div>
 
+                <!-- Google Sheet Sync Status Banner -->
+                <div class="max-w-md mx-auto mb-6 p-3 rounded-2xl text-xs font-semibold flex items-center justify-between border"
+                    :class="{
+                        'bg-emerald-50 border-emerald-200 text-emerald-800': syncStatus === 'success',
+                        'bg-amber-50 border-amber-200 text-amber-800': syncStatus === 'sending',
+                        'bg-red-50 border-red-200 text-red-800': syncStatus === 'failed',
+                        'bg-slate-50 border-slate-200 text-slate-600': syncStatus === 'idle'
+                    }">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid text-sm"
+                            :class="{
+                                'fa-circle-check text-emerald-600': syncStatus === 'success',
+                                'fa-spinner animate-spin text-amber-600': syncStatus === 'sending',
+                                'fa-triangle-exclamation text-red-500': syncStatus === 'failed',
+                                'fa-file-excel text-slate-400': syncStatus === 'idle'
+                            }"></i>
+                        <span x-text="getSyncStatusLabel()"></span>
+                    </div>
+                    <button x-show="webhookUrl && syncStatus !== 'sending'" @click="sendToGoogleSheet(lastReport)" class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Sync Manual
+                    </button>
+                </div>
+
                 <!-- Stats Breakdown Row -->
                 <div class="grid grid-cols-3 gap-4 max-w-md mx-auto border-t border-slate-100 pt-6">
                     <div>
@@ -364,149 +387,110 @@
                         <span class="text-xs text-slate-400 block font-semibold">Waktu Tempuh</span>
                         <span class="text-lg font-bold text-slate-700" x-text="lastReport?.timeTaken || '-'"></span>
                     </div>
-                </div>
-
-                <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <button @click="goHome()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-bold transition">
-                        <i class="fa-solid fa-house mr-1.5"></i> Kembali ke Dashboard
-                    </button>
-                    <button @click="toggleReviewMode()" class="px-5 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs sm:text-sm font-bold transition">
-                        <i class="fa-solid fa-list-check mr-1.5"></i> 
-                        <span x-text="showReview ? 'Sembunyikan Pembahasan' : 'Lihat Pembahasan Soal'"></span>
-                    </button>
-                </div>
+    <!-- MODAL 2: SETTINGS (API KEY & GOOGLE SHEET WEBHOOK) -->
+    <div x-show="showSettingsModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5" @click.away="showSettingsModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-600"></i> Pengaturan Integrasi
+                </h3>
+                <button @click="showSettingsModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- Detailed Question Review Section -->
-            <div x-show="showReview" x-transition class="space-y-6">
-                <h3 class="text-xl font-bold text-slate-900 flex items-center space-x-2">
-                    <i class="fa-solid fa-magnifying-glass text-brand-600"></i>
-                    <span>Pembahasan & Koreksi Soal</span>
-                </h3>
+            <!-- Gemini API Key Input -->
+            <div>
+                <label class="block font-semibold text-xs text-slate-700 mb-1">API Key Gemini (Opsional AI Generator)</label>
+                <input type="password" x-model="apiKey" placeholder="Masukkan API Key Gemini" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
 
-                <template x-for="(q, qIdx) in (lastReport?.questions || [])" :key="qIdx">
-                    <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4"
-                        :class="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'border-emerald-200' : 'border-red-200'">
-                        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
-                            <span class="font-bold text-sm" x-text="'Soal No. ' + (qIdx + 1)"></span>
-                            <span class="px-2.5 py-1 rounded-md text-xs font-bold"
-                                :class="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
-                                <i class="fa-solid mr-1" :class="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'fa-check' : 'fa-xmark'"></i>
-                                <span x-text="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'BENAR' : 'SALAH'"></span>
-                            </span>
-                        </div>
+            <!-- Google Sheet Webhook URL Input -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="block font-semibold text-xs text-slate-700">URL Web App Google Sheet Admin</label>
+                    <button @click="openScriptModal()" class="text-[11px] text-brand-600 font-bold hover:underline">
+                        <i class="fa-solid fa-code text-xs"></i> Panduan & Kode
+                    </button>
+                </div>
+                <input type="url" x-model="webhookUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                <p class="text-[10px] text-slate-400 leading-tight">Memungkinkan hasil ujian siswa otomatis tersimpan di Google Sheet milik Guru / Admin secara real-time.</p>
+            </div>
 
-                        <p class="text-slate-800 font-semibold text-sm sm:text-base" x-text="q.question"></p>
-
-                        <div class="space-y-2 text-xs sm:text-sm">
-                            <template x-for="(opt, oIdx) in (q.options || [])" :key="oIdx">
-                                <div class="p-3 rounded-lg border flex items-center justify-between"
-                                    :class="{
-                                        'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold': oIdx === q.correctAnswer,
-                                        'bg-red-50 border-red-300 text-red-900 font-bold': oIdx === lastReport?.userAnswers?.[qIdx] && oIdx !== q.correctAnswer,
-                                        'bg-slate-50 border-slate-100 text-slate-600': oIdx !== q.correctAnswer && oIdx !== lastReport?.userAnswers?.[qIdx]
-                                    }">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="w-6 h-6 rounded flex items-center justify-center border font-bold text-xs" x-text="String.fromCharCode(65 + oIdx)"></span>
-                                        <span x-text="opt"></span>
-                                    </div>
-                                    <template x-if="oIdx === q.correctAnswer">
-                                        <span class="text-xs text-emerald-700 font-bold">Kunci Jawaban</span>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
-                            <strong class="text-slate-800 block mb-1"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> Pembahasan:</strong>
-                            <span x-text="q.explanation || 'Tidak ada pembahasan khusus untuk soal ini.'"></span>
-                        </div>
-                    </div>
-                </template>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button @click="saveSettings()" class="px-5 py-2 bg-slate-900 hover:bg-brand-600 text-white text-xs font-bold rounded-xl transition">Simpan Pengaturan</button>
             </div>
         </div>
+    </div>
 
-    </main>
-
-    <!-- MODAL 1: GENERATE QUIZ WITH AI -->
-    <div x-show="showAIGeneratorModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative space-y-6" @click.away="showAIGeneratorModal = false">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+    <!-- MODAL 3: IDENTITAS PESERTA UJIAN -->
+    <div x-show="showIdentityModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4" @click.away="showIdentityModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center space-x-2">
-                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-id-card"></i>
                     </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900">AI Exam Generator</h3>
-                        <p class="text-xs text-slate-500">Buat soal otomatis dengan Gemini AI</p>
-                    </div>
+                    <h3 class="text-base font-bold text-slate-900">Identitas Peserta Ujian</h3>
                 </div>
-                <button @click="showAIGeneratorModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button @click="showIdentityModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <form @submit.prevent="generateQuestionsWithAI()" class="space-y-4 text-xs sm:text-sm">
-                <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Mata Pelajaran / Topik Kisi-kisi</label>
-                    <input type="text" x-model="aiPrompt.topic" placeholder="Contoh: BTQ Hukum Tajwid, IPA SD, Sejarah Islam" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
-                </div>
+            <p class="text-xs text-slate-500">Lengkapi data diri berikut agar hasil ujian Anda tercatat secara resmi di sistem Admin.</p>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Jenjang / Tingkat</label>
-                        <select x-model="aiPrompt.grade" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
-                            <option value="SD">Sekolah Dasar (SD)</option>
-                            <option value="SMP">SMP / MTs</option>
-                            <option value="SMA">SMA / MA / SMK</option>
-                            <option value="Kuliah/Umum">Kuliah / Umum</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Jumlah Soal</label>
-                        <select x-model="aiPrompt.count" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
-                            <option value="5">5 Soal (Cepat)</option>
-                            <option value="10">10 Soal (Standard)</option>
-                            <option value="15">15 Soal</option>
-                        </select>
-                    </div>
+            <form @submit.prevent="confirmIdentityAndStart()" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Peserta *</label>
+                    <input type="text" x-model="studentInfo.name" placeholder="Contoh: Ahmad Abdullah" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Durasi Ujian (Menit)</label>
-                    <input type="number" x-model="aiPrompt.duration" min="5" max="180" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                    <label class="block font-semibold text-slate-700 mb-1">Kelas / No. Absen / NISN *</label>
+                    <input type="text" x-model="studentInfo.classNum" placeholder="Contoh: VI A / Absen 05" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
                 </div>
 
-                <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
-                    <button type="button" @click="showAIGeneratorModal = false" class="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">Batal</button>
-                    <button type="submit" :disabled="isGeneratingAI" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md transition flex items-center space-x-2">
-                        <template x-if="isGeneratingAI">
-                            <span class="flex items-center space-x-2">
-                                <i class="fa-solid fa-spinner animate-spin"></i>
-                                <span>Membuat Soal...</span>
-                            </span>
-                        </template>
-                        <template x-if="!isGeneratingAI">
-                            <span class="flex items-center space-x-2">
-                                <i class="fa-solid fa-bolt"></i>
-                                <span>Generate Paket Ujian</span>
-                            </span>
-                        </template>
+                <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+                    <button type="button" @click="showIdentityModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md transition flex items-center space-x-1.5">
+                        <span>Mulai Kerjakan Soal</span>
+                        <i class="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL 2: SETTINGS (API KEY) -->
-    <div x-show="showSettingsModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4" @click.away="showSettingsModal = false">
-            <h3 class="text-lg font-bold text-slate-900">Pengaturan Gemini API Key</h3>
-            <p class="text-xs text-slate-500">Kunci API digunakan jika Anda ingin membuat paket soal custom berbasis AI Gemini.</p>
-            <div>
-                <label class="block font-semibold text-xs text-slate-700 mb-1">API Key Gemini</label>
-                <input type="password" x-model="apiKey" placeholder="Masukkan API Key Anda" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+    <!-- MODAL 4: PANDUAN & KODE GOOGLE APPS SCRIPT -->
+    <div x-show="showScriptModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-file-csv text-emerald-600"></i>
+                    <span>Panduan Setup Google Sheet Admin</span>
+                </h3>
+                <button @click="showScriptModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="flex justify-end space-x-2 pt-2">
-                <button @click="saveApiKey()" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl">Simpan</button>
+
+            <ol class="list-decimal list-inside text-xs text-slate-600 space-y-2 leading-relaxed">
+                <li>Buka **Google Spreadsheet** baru di Google Drive Anda.</li>
+                <li>Pilih menu **Ekstensi > Apps Script**.</li>
+                <li>Hapus semua kode bawaan, lalu **Salin & Tempel** kode di bawah ini:</li>
+            </ol>
+
+            <div class="relative bg-slate-900 text-emerald-400 p-4 rounded-xl font-mono text-[11px] overflow-x-auto border border-slate-800">
+                <button @click="copyAppsScriptCode()" class="absolute top-2 right-2 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] font-sans font-semibold transition">
+                    <i class="fa-regular fa-copy mr-1"></i> Salin Kode
+                </button>
+                <pre class="whitespace-pre-wrap leading-tight" x-text="appsScriptTemplate"></pre>
+            </div>
+
+            <ol start="4" class="list-decimal list-inside text-xs text-slate-600 space-y-2 leading-relaxed">
+                <li>Klik tombol **Simpan** (ikon disket), lalu klik **Terapkan (Deploy) > Penerapan baru**.</li>
+                <li>Pilih tipe **Aplikasi Web (Web App)**.</li>
+                <li>Pada bagian *"Siapa yang memiliki akses"*, ubah ke **"Siapa saja (Anyone)"**.</li>
+                <li>Klik **Terapkan**, izinkan akses akun Google Anda, lalu **Salin URL Aplikasi Web** dan tempel di Pengaturan ExamiQ.</li>
+            </ol>
+
+            <div class="pt-2 flex justify-end">
+                <button @click="showScriptModal = false" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs">Tutup Panduan</button>
             </div>
         </div>
     </div>
@@ -517,8 +501,45 @@
                 currentScreen: 'dashboard', // 'dashboard', 'exam', 'report'
                 showAIGeneratorModal: false,
                 showSettingsModal: false,
+                showIdentityModal: false,
+                showScriptModal: false,
                 isGeneratingAI: false,
                 apiKey: localStorage.getItem('examiq_gemini_key') || '',
+
+                // Google Sheets Webhook State
+                webhookUrl: localStorage.getItem('examiq_gsheet_url') || '',
+                syncStatus: 'idle', // 'idle', 'sending', 'success', 'failed'
+                studentInfo: JSON.parse(localStorage.getItem('examiq_student_info') || '{"name":"","classNum":""}'),
+                pendingExam: null,
+
+                // Apps Script Code Template
+                appsScriptTemplate: `function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Buat header otomatis jika tabel masih kosong
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Waktu", "Nama Peserta", "Kelas / Absen", "Judul Ujian", "Skor", "Benar", "Salah", "Waktu Tempuh"]);
+      sheet.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#dcfce7");
+    }
+    
+    sheet.appendRow([
+      data.timestamp || new Date().toLocaleString(),
+      data.studentName || "-",
+      data.studentClass || "-",
+      data.examTitle || "-",
+      data.score || 0,
+      data.correctCount || 0,
+      data.wrongCount || 0,
+      data.timeTaken || "-"
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({result: "error", error: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}`,
 
                 // Current active exam session state
                 activeExam: null,
@@ -546,7 +567,9 @@
                     timeTaken: '',
                     date: '',
                     questions: [],
-                    userAnswers: {}
+                    userAnswers: {},
+                    studentName: '',
+                    studentClass: ''
                 },
                 showReview: false,
 
@@ -745,6 +768,12 @@
                 },
 
                 selectAndStartExam(exam) {
+                    if (!this.studentInfo.name || !this.studentInfo.classNum) {
+                        this.pendingExam = exam;
+                        this.showIdentityModal = true;
+                        return;
+                    }
+
                     this.activeExam = exam;
                     this.currentQuestionIndex = 0;
                     this.userAnswers = {};
@@ -754,6 +783,16 @@
 
                     this.currentScreen = 'exam';
                     this.startTimer();
+                },
+
+                confirmIdentityAndStart() {
+                    localStorage.setItem('examiq_student_info', JSON.stringify(this.studentInfo));
+                    this.showIdentityModal = false;
+                    if (this.pendingExam) {
+                        const examToStart = this.pendingExam;
+                        this.pendingExam = null;
+                        this.selectAndStartExam(examToStart);
+                    }
                 },
 
                 startTimer() {
@@ -835,7 +874,9 @@
                         timeTaken: `${Math.floor(timeElapsedSec / 60)} mnt ${timeElapsedSec % 60} det`,
                         date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
                         questions: this.activeExam.questions,
-                        userAnswers: { ...this.userAnswers }
+                        userAnswers: { ...this.userAnswers },
+                        studentName: this.studentInfo.name || 'Anonim',
+                        studentClass: this.studentInfo.classNum || '-'
                     };
 
                     // Save history
@@ -843,6 +884,52 @@
                     localStorage.setItem('examiq_history', JSON.stringify(this.examHistory.slice(0, 10)));
 
                     this.currentScreen = 'report';
+
+                    // Send data to Google Sheet Webhook if configured
+                    if (this.webhookUrl) {
+                        this.sendToGoogleSheet(this.lastReport);
+                    } else {
+                        this.syncStatus = 'idle';
+                    }
+                },
+
+                async sendToGoogleSheet(reportData) {
+                    if (!this.webhookUrl) return;
+                    this.syncStatus = 'sending';
+
+                    const payload = {
+                        timestamp: reportData.date || new Date().toLocaleString('id-ID'),
+                        studentName: reportData.studentName || this.studentInfo.name || 'Anonim',
+                        studentClass: reportData.studentClass || this.studentInfo.classNum || '-',
+                        examTitle: reportData.title,
+                        score: reportData.score,
+                        correctCount: reportData.correctCount,
+                        wrongCount: reportData.wrongCount,
+                        timeTaken: reportData.timeTaken
+                    };
+
+                    try {
+                        // Using text/plain mode to bypass CORS pre-flight constraints on Google Apps Script
+                        await fetch(this.webhookUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify(payload)
+                        });
+                        this.syncStatus = 'success';
+                    } catch (err) {
+                        console.error('Failed to sync with Google Sheet:', err);
+                        this.syncStatus = 'failed';
+                    }
+                },
+
+                getSyncStatusLabel() {
+                    switch (this.syncStatus) {
+                        case 'sending': return 'Mengirim hasil ujian ke Google Sheet Admin...';
+                        case 'success': return 'Tersinkronisasi ke Google Sheet Admin!';
+                        case 'failed': return 'Gagal mengirim hasil ke Google Sheet. Cek URL Webhook.';
+                        default: return this.webhookUrl ? 'Siap disinkronkan ke Google Sheet.' : 'Google Sheet Admin belum dikonfigurasi.';
+                    }
                 },
 
                 toggleReviewMode() {
@@ -868,9 +955,24 @@
                     this.showSettingsModal = true;
                 },
 
-                saveApiKey() {
+                openScriptModal() {
+                    this.showScriptModal = true;
+                },
+
+                saveSettings() {
                     localStorage.setItem('examiq_gemini_key', this.apiKey);
+                    localStorage.setItem('examiq_gsheet_url', this.webhookUrl);
                     this.showSettingsModal = false;
+                },
+
+                copyAppsScriptCode() {
+                    const el = document.createElement('textarea');
+                    el.value = this.appsScriptTemplate;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    alert('Kode Google Apps Script berhasil disalin ke clipboard!');
                 }
             }
         }
