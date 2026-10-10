@@ -1,225 +1,878 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulasi Ujian PAI MAPSI 2026</title>
+    <title>ExamiQ - Tool Ujian Online & Generator Kuis</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Alpine.js CDN for lightweight reactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
 </head>
-<body class="bg-emerald-50 font-sans text-gray-800">
-    <div class="min-h-screen flex flex-col justify-between">
-        
-        <!-- Header -->
-        <header class="bg-emerald-700 text-white shadow-md p-4 text-center">
-            <h1 class="text-2xl font-bold">Simulasi Ujian PAI MAPSI 2026</h1>
-            <p class="text-sm text-emerald-100">Portal Latihan Soal Pendidikan Agama Islam</p>
-        </header>
+<body class="h-full font-sans text-slate-800 antialiased bg-slate-50 selection:bg-brand-500 selection:text-white" x-data="examApp()">
 
-        <!-- Main Content -->
-        <main class="container mx-auto p-4 max-w-xl my-auto">
-            
-            <!-- Start Screen -->
-            <div id="start-screen" class="bg-white rounded-2xl shadow-xl p-6 text-center">
-                <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">📖</div>
-                <h2 class="text-xl font-bold mb-2 text-emerald-800">Selamat Datang, Peserta MAPSI 2026</h2>
-                <p class="text-gray-600 text-sm mb-4">Uji kemampuan pemahaman materi Al-Quran, Fiqh, Akidah, dan Sejarah Islam secara mandiri.</p>
-                
-                <!-- Input Nama Peserta -->
-                <div class="mb-5 text-left">
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Nama Lengkap Peserta:</label>
-                    <input type="text" id="participant-name" placeholder="Masukkan nama Anda..." class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" @click="goHome()">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900 leading-none">ExamiQ</h1>
+                        <span class="text-xs text-brand-600 font-semibold tracking-wide">PORTAL UJIAN ONLINE</span>
+                    </div>
                 </div>
 
-                <button onclick="startQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 shadow-md">Mulai Ujian Sekarang</button>
-            </div>
+                <!-- Header Status & Action Buttons -->
+                <div class="flex items-center space-x-3">
+                    <template x-if="currentScreen === 'exam'">
+                        <div class="flex items-center space-x-4 bg-slate-100 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700">
+                            <span class="text-xs text-slate-500 hidden sm:inline">Sisa Waktu:</span>
+                            <div class="flex items-center space-x-1 font-mono text-brand-700 font-bold" x-bind:class="timeLeft < 300 ? 'text-red-600 animate-pulse' : ''">
+                                <i class="fa-regular fa-clock"></i>
+                                <span x-text="formatTime(timeLeft)">--:--</span>
+                            </div>
+                        </div>
+                    </template>
 
-            <!-- Quiz Screen -->
-            <div id="quiz-screen" class="bg-white rounded-2xl shadow-xl p-6 hidden">
-                <div class="flex justify-between items-center mb-4 border-b pb-3">
-                    <span id="question-number" class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md">Soal 1 dari 5</span>
-                    <span id="timer" class="text-xs font-semibold text-red-600 bg-red-50 px-2.5 py-1 rounded-md">Waktu: 30s</span>
+                    <button @click="openAIGeneratorModal()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-brand-700 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-2 border border-emerald-200">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+                        <span>Buat Soal AI</span>
+                    </button>
+
+                    <button @click="openSettingsModal()" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition" title="Pengaturan API Key">
+                        <i class="fa-solid fa-gear text-lg"></i>
+                    </button>
                 </div>
-                <h2 id="question-text" class="text-base font-semibold mb-5 text-gray-800 min-h-[50px]">Pertanyaan...</h2>
-                <div id="options-container" class="space-y-3 mb-6"></div>
-                <button id="next-btn" onclick="nextQuestion()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition duration-200 hidden shadow-md">Selanjutnya</button>
             </div>
+        </div>
+    </header>
 
-            <!-- Result Screen -->
-            <div id="result-screen" class="bg-white rounded-2xl shadow-xl p-6 text-center hidden">
-                <h2 class="text-2xl font-bold text-emerald-800 mb-2">Ujian Selesai!</h2>
-                <p class="text-gray-600 text-sm mb-6">Alhamdulillah, hasil ujian Anda telah tercatat secara otomatis.</p>
-                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-6">
-                    <p class="text-xs uppercase font-bold text-gray-500 mb-1">Perolehan Skor Akhir</p>
-                    <p id="score-display" class="text-5xl font-extrabold text-emerald-700">0</p>
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- SCREEN 1: DASHBOARD / SELECTION -->
+        <div x-show="currentScreen === 'dashboard'" x-transition class="space-y-8">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-brand-900 to-emerald-900 text-white p-6 sm:p-10 shadow-xl">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-4">
+                        <i class="fa-solid fa-sparkles mr-1.5"></i> Siap Diases Kapan Saja
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3 leading-tight">
+                        Platform Ujian Online & Latihan Soal Interaktif
+                    </h2>
+                    <p class="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
+                        Pilih paket latihan yang sudah tersedia (termasuk MAPSI SD PAI & BTQ) atau buat kuis kustom baru berbasis AI secara otomatis!
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button @click="startPresetExam('mapsi')" class="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition flex items-center space-x-2 text-sm sm:text-base">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Mulai Simulasi MAPSI SD (100 Soal)</span>
+                        </button>
+                        <button @click="openAIGeneratorModal()" class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold rounded-xl transition text-sm sm:text-base flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Buat Ujian Topik Lain</span>
+                        </button>
+                    </div>
                 </div>
-                <button onclick="restartQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 shadow-md">Ulangi Ujian</button>
+                <!-- Decorative Icon background -->
+                <div class="absolute -right-8 -bottom-8 opacity-10 pointer-events-none">
+                    <i class="fa-solid fa-book-quran text-[240px]"></i>
+                </div>
             </div>
-        </main>
 
-        <!-- Footer -->
-        <footer class="bg-emerald-900 text-emerald-200 text-center py-4 text-xs">
-            <p>&copy; 2026 Aplikasi Ujian PAI MAPSI. Didukung untuk Pendidikan Islam.</p>
-        </footer>
+            <!-- Exam Presets & Collections -->
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check text-brand-600"></i>
+                        <span>Pilihan Paket Ujian Available</span>
+                    </h3>
+                    <span class="text-xs text-slate-500" x-text="presetExams.length + ' Paket Tersedia'"></span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <template x-for="(exam, idx) in presetExams" :key="idx">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+                            <div>
+                                <div class="flex items-start justify-between mb-3">
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
+                                        :class="{
+                                            'bg-emerald-100 text-emerald-800': exam.category === 'MAPSI SD',
+                                            'bg-blue-100 text-blue-800': exam.category === 'Umum',
+                                            'bg-purple-100 text-purple-800': exam.category === 'AI Generated'
+                                        }"
+                                        x-text="exam.category">
+                                    </span>
+                                    <span class="text-xs font-medium text-slate-400 flex items-center">
+                                        <i class="fa-regular fa-clock mr-1"></i>
+                                        <span x-text="exam.timeMinutes + ' Menit'"></span>
+                                    </span>
+                                </div>
+                                <h4 class="text-base font-bold text-slate-900 group-hover:text-brand-600 transition mb-2" x-text="exam.title"></h4>
+                                <p class="text-xs text-slate-500 line-clamp-2 mb-4" x-text="exam.description"></p>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <div class="text-xs text-slate-500">
+                                    <i class="fa-solid fa-circle-question mr-1 text-slate-400"></i>
+                                    <span x-text="exam.questions.length + ' Soal'"></span>
+                                </div>
+                                <button @click="selectAndStartExam(exam)" class="px-4 py-2 bg-slate-900 hover:bg-brand-600 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                                    <span>Mulai Ujian</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Exam History / Previous Results -->
+            <div x-show="examHistory.length > 0">
+                <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-history text-slate-600"></i>
+                    <span>Riwayat Hasil Ujian Terakhir</span>
+                </h3>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
+                                <tr>
+                                    <th class="py-3 px-4">Tanggal</th>
+                                    <th class="py-3 px-4">Judul Ujian</th>
+                                    <th class="py-3 px-4">Skor</th>
+                                    <th class="py-3 px-4">Benar / Salah</th>
+                                    <th class="py-3 px-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="(hist, hIdx) in examHistory" :key="hIdx">
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-3 px-4 text-slate-500 whitespace-nowrap" x-text="hist.date"></td>
+                                        <td class="py-3 px-4 font-semibold text-slate-800" x-text="hist.title"></td>
+                                        <td class="py-3 px-4 font-bold">
+                                            <span :class="hist.score >= 75 ? 'text-emerald-600' : 'text-amber-600'" x-text="hist.score + '/100'"></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-slate-600" x-text="hist.correctCount + ' / ' + hist.wrongCount"></td>
+                                        <td class="py-3 px-4 text-right">
+                                            <button @click="viewHistoryDetail(hist)" class="text-brand-600 hover:text-brand-800 font-semibold text-xs">
+                                                Lihat Laporan
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: ACTIVE EXAM INTERFACE -->
+        <div x-show="currentScreen === 'exam'" x-cloak class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Main Question Area (Left 3 cols) -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Exam Top Info Bar -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900" x-text="activeExam?.title || ''"></h2>
+                        <p class="text-xs text-slate-500" x-text="'Materi: ' + (currentQuestion?.category || 'PAI & BTQ')"></p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block">Progres</span>
+                        <span class="text-sm font-extrabold text-brand-600" x-text="(currentQuestionIndex + 1) + ' / ' + (activeExam?.questions?.length || 0)"></span>
+                    </div>
+                </div>
+
+                <!-- Question Card -->
+                <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div class="inline-flex items-center space-x-2">
+                            <span class="w-8 h-8 rounded-lg bg-brand-100 text-brand-800 font-bold flex items-center justify-center text-sm" x-text="currentQuestionIndex + 1"></span>
+                            <span class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md" x-text="currentQuestion?.category || ''"></span>
+                        </div>
+                        <button @click="toggleFlag(currentQuestionIndex)" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1"
+                            :class="flaggedQuestions[currentQuestionIndex] ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span x-text="flaggedQuestions[currentQuestionIndex] ? 'Tandai Ragu' : 'Ragu-ragu'"></span>
+                        </button>
+                    </div>
+
+                    <!-- Question Text -->
+                    <div class="text-base sm:text-lg font-semibold text-slate-800 leading-relaxed" x-text="currentQuestion?.question || ''"></div>
+
+                    <!-- Options List -->
+                    <div class="space-y-3 pt-2">
+                        <template x-for="(opt, oIdx) in (currentQuestion?.options || [])" :key="oIdx">
+                            <label @click="selectAnswer(currentQuestionIndex, oIdx)" 
+                                class="flex items-center p-4 rounded-xl border-2 cursor-pointer transition relative group"
+                                :class="userAnswers[currentQuestionIndex] === oIdx 
+                                    ? 'border-brand-500 bg-brand-50/50 text-slate-900 font-medium' 
+                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'">
+                                <div class="w-7 h-7 rounded-lg border-2 flex items-center justify-center mr-3 font-bold text-xs transition"
+                                    :class="userAnswers[currentQuestionIndex] === oIdx 
+                                        ? 'border-brand-600 bg-brand-600 text-white' 
+                                        : 'border-slate-300 text-slate-500 group-hover:border-slate-400'">
+                                    <span x-text="String.fromCharCode(65 + oIdx)"></span>
+                                </div>
+                                <span class="text-sm sm:text-base flex-1" x-text="opt"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Navigation Controls Footer -->
+                <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <button @click="prevQuestion()" :disabled="currentQuestionIndex === 0" 
+                        class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        <span>Sebelumnya</span>
+                    </button>
+
+                    <div class="flex items-center space-x-2">
+                        <template x-if="activeExam && currentQuestionIndex === activeExam.questions.length - 1">
+                            <button @click="confirmFinishExam()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-brand-500/20 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-check-double"></i>
+                                <span>Selesaikan Ujian</span>
+                            </button>
+                        </template>
+                        <template x-if="activeExam && currentQuestionIndex < activeExam.questions.length - 1">
+                            <button @click="nextQuestion()" class="px-5 py-2.5 bg-slate-900 hover:bg-brand-600 text-white rounded-xl font-semibold text-xs sm:text-sm shadow-sm transition flex items-center space-x-1.5">
+                                <span>Berikutnya</span>
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Grid Drawer / Sidebar (Right 1 col) -->
+            <div class="space-y-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+                        <span>Navigasi Soal</span>
+                        <span class="text-xs text-slate-400 font-normal" x-text="getAnsweredCount() + '/' + (activeExam?.questions?.length || 0) + ' Terjawab'"></span>
+                    </h3>
+
+                    <!-- Status Legend -->
+                    <div class="grid grid-cols-3 gap-2 text-[10px] font-medium text-slate-500">
+                        <div class="flex items-center space-x-1">
+                            <span class="w-3 h-3 rounded bg-brand-500"></span>
+                            <span>Sudah</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="w-3 h-3 rounded bg-amber-400"></span>
+                            <span>Ragu</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="w-3 h-3 rounded bg-slate-200"></span>
+                            <span>Belum</span>
+                        </div>
+                    </div>
+
+                    <!-- Question Grid Buttons -->
+                    <div class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-5 gap-2 max-h-[360px] overflow-y-auto custom-scrollbar p-1">
+                        <template x-for="(q, qIdx) in (activeExam?.questions || [])" :key="qIdx">
+                            <button @click="jumpToQuestion(qIdx)" 
+                                class="w-9 h-9 rounded-lg font-bold text-xs flex items-center justify-center transition relative"
+                                :class="{
+                                    'ring-2 ring-slate-900 ring-offset-2': currentQuestionIndex === qIdx,
+                                    'bg-amber-400 text-slate-900': flaggedQuestions[qIdx],
+                                    'bg-brand-500 text-white': !flaggedQuestions[qIdx] && userAnswers[qIdx] !== undefined,
+                                    'bg-slate-100 text-slate-600 hover:bg-slate-200': !flaggedQuestions[qIdx] && userAnswers[qIdx] === undefined
+                                }">
+                                <span x-text="qIdx + 1"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <button @click="confirmFinishExam()" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl font-bold text-xs transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        <span>Selesaikan Ujian Sekarang</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: EXAM RESULT & ANALYTICS REPORT -->
+        <div x-show="currentScreen === 'report'" x-cloak class="space-y-8 max-w-4xl mx-auto">
+            <!-- Score Card Summary Header -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-8 sm:p-10 relative">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-4 shadow-lg"
+                    :class="(lastReport?.score || 0) >= 75 ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-amber-500 text-white shadow-amber-500/30'">
+                    <i class="fa-solid text-3xl" :class="(lastReport?.score || 0) >= 75 ? 'fa-award' : 'fa-triangle-exclamation'"></i>
+                </div>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1" x-text="lastReport?.title || ''"></h2>
+                <p class="text-xs sm:text-sm text-slate-500 mb-6" x-text="'Diselesaikan pada: ' + (lastReport?.date || '')"></p>
+
+                <!-- Big Score Display -->
+                <div class="inline-block bg-slate-50 border border-slate-200 rounded-2xl px-8 py-4 mb-6">
+                    <span class="text-xs uppercase font-bold tracking-wider text-slate-400 block mb-1">Skor Akhir Anda</span>
+                    <span class="text-4xl sm:text-6xl font-black" :class="(lastReport?.score || 0) >= 75 ? 'text-emerald-600' : 'text-amber-600'" x-text="lastReport?.score || 0"></span>
+                    <span class="text-slate-400 text-xl font-bold">/100</span>
+                </div>
+
+                <!-- Stats Breakdown Row -->
+                <div class="grid grid-cols-3 gap-4 max-w-md mx-auto border-t border-slate-100 pt-6">
+                    <div>
+                        <span class="text-xs text-slate-400 block font-semibold">Jawaban Benar</span>
+                        <span class="text-lg font-bold text-emerald-600" x-text="(lastReport?.correctCount || 0) + ' Soal'"></span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block font-semibold">Jawaban Salah</span>
+                        <span class="text-lg font-bold text-red-500" x-text="(lastReport?.wrongCount || 0) + ' Soal'"></span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block font-semibold">Waktu Tempuh</span>
+                        <span class="text-lg font-bold text-slate-700" x-text="lastReport?.timeTaken || '-'"></span>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex flex-wrap justify-center gap-3">
+                    <button @click="goHome()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-bold transition">
+                        <i class="fa-solid fa-house mr-1.5"></i> Kembali ke Dashboard
+                    </button>
+                    <button @click="toggleReviewMode()" class="px-5 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs sm:text-sm font-bold transition">
+                        <i class="fa-solid fa-list-check mr-1.5"></i> 
+                        <span x-text="showReview ? 'Sembunyikan Pembahasan' : 'Lihat Pembahasan Soal'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detailed Question Review Section -->
+            <div x-show="showReview" x-transition class="space-y-6">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-magnifying-glass text-brand-600"></i>
+                    <span>Pembahasan & Koreksi Soal</span>
+                </h3>
+
+                <template x-for="(q, qIdx) in (lastReport?.questions || [])" :key="qIdx">
+                    <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4"
+                        :class="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'border-emerald-200' : 'border-red-200'">
+                        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                            <span class="font-bold text-sm" x-text="'Soal No. ' + (qIdx + 1)"></span>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-bold"
+                                :class="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'">
+                                <i class="fa-solid mr-1" :class="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'fa-check' : 'fa-xmark'"></i>
+                                <span x-text="lastReport?.userAnswers?.[qIdx] === q.correctAnswer ? 'BENAR' : 'SALAH'"></span>
+                            </span>
+                        </div>
+
+                        <p class="text-slate-800 font-semibold text-sm sm:text-base" x-text="q.question"></p>
+
+                        <div class="space-y-2 text-xs sm:text-sm">
+                            <template x-for="(opt, oIdx) in (q.options || [])" :key="oIdx">
+                                <div class="p-3 rounded-lg border flex items-center justify-between"
+                                    :class="{
+                                        'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold': oIdx === q.correctAnswer,
+                                        'bg-red-50 border-red-300 text-red-900 font-bold': oIdx === lastReport?.userAnswers?.[qIdx] && oIdx !== q.correctAnswer,
+                                        'bg-slate-50 border-slate-100 text-slate-600': oIdx !== q.correctAnswer && oIdx !== lastReport?.userAnswers?.[qIdx]
+                                    }">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-6 h-6 rounded flex items-center justify-center border font-bold text-xs" x-text="String.fromCharCode(65 + oIdx)"></span>
+                                        <span x-text="opt"></span>
+                                    </div>
+                                    <template x-if="oIdx === q.correctAnswer">
+                                        <span class="text-xs text-emerald-700 font-bold">Kunci Jawaban</span>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                            <strong class="text-slate-800 block mb-1"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> Pembahasan:</strong>
+                            <span x-text="q.explanation || 'Tidak ada pembahasan khusus untuk soal ini.'"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: GENERATE QUIZ WITH AI -->
+    <div x-show="showAIGeneratorModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative space-y-6" @click.away="showAIGeneratorModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">AI Exam Generator</h3>
+                        <p class="text-xs text-slate-500">Buat soal otomatis dengan Gemini AI</p>
+                    </div>
+                </div>
+                <button @click="showAIGeneratorModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form @submit.prevent="generateQuestionsWithAI()" class="space-y-4 text-xs sm:text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Mata Pelajaran / Topik Kisi-kisi</label>
+                    <input type="text" x-model="aiPrompt.topic" placeholder="Contoh: BTQ Hukum Tajwid, IPA SD, Sejarah Islam" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Jenjang / Tingkat</label>
+                        <select x-model="aiPrompt.grade" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="SD">Sekolah Dasar (SD)</option>
+                            <option value="SMP">SMP / MTs</option>
+                            <option value="SMA">SMA / MA / SMK</option>
+                            <option value="Kuliah/Umum">Kuliah / Umum</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Jumlah Soal</label>
+                        <select x-model="aiPrompt.count" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="5">5 Soal (Cepat)</option>
+                            <option value="10">10 Soal (Standard)</option>
+                            <option value="15">15 Soal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Durasi Ujian (Menit)</label>
+                    <input type="number" x-model="aiPrompt.duration" min="5" max="180" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+                    <button type="button" @click="showAIGeneratorModal = false" class="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">Batal</button>
+                    <button type="submit" :disabled="isGeneratingAI" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md transition flex items-center space-x-2">
+                        <template x-if="isGeneratingAI">
+                            <span class="flex items-center space-x-2">
+                                <i class="fa-solid fa-spinner animate-spin"></i>
+                                <span>Membuat Soal...</span>
+                            </span>
+                        </template>
+                        <template x-if="!isGeneratingAI">
+                            <span class="flex items-center space-x-2">
+                                <i class="fa-solid fa-bolt"></i>
+                                <span>Generate Paket Ujian</span>
+                            </span>
+                        </template>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SETTINGS (API KEY) -->
+    <div x-show="showSettingsModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4" @click.away="showSettingsModal = false">
+            <h3 class="text-lg font-bold text-slate-900">Pengaturan Gemini API Key</h3>
+            <p class="text-xs text-slate-500">Kunci API digunakan jika Anda ingin membuat paket soal custom berbasis AI Gemini.</p>
+            <div>
+                <label class="block font-semibold text-xs text-slate-700 mb-1">API Key Gemini</label>
+                <input type="password" x-model="apiKey" placeholder="Masukkan API Key Anda" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button @click="saveApiKey()" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl">Simpan</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // --- ⚠️ GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA ---
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw7WRBOo6KVtKqxMaPviGc4iXkHQUGEB8pXebdO4qhGrbGTsoyuP3ELgTz-f2I51R0n/exec";
+        function examApp() {
+            return {
+                currentScreen: 'dashboard', // 'dashboard', 'exam', 'report'
+                showAIGeneratorModal: false,
+                showSettingsModal: false,
+                isGeneratingAI: false,
+                apiKey: localStorage.getItem('examiq_gemini_key') || '',
 
-        const questions = [
-            {
-                question: "Surat Al-Falaq terdiri dari berapa ayat dalam Al-Quran?",
-                options: ["3 ayat", "4 ayat", "5 ayat", "6 ayat"],
-                answer: 2
-            },
-            {
-                question: "Hukum bacaan Nun Sukun atau Tanwin apabila bertemu dengan huruf Ba' (ب) disebut...?",
-                options: ["Idgham Bighunnah", "Iqlab", "Ikhfa Haqiqi", "Izhar Halqi"],
-                answer: 1
-            },
-            {
-                question: "Rukun Islam yang kedua setelah mengucapkan dua kalimat syahadat adalah...?",
-                options: ["Menunaikan Zakat", "Mendirikan Shalat", "Puasa di Bulan Ramadan", "Menunaikan Haji bagi yang mampu"],
-                answer: 1
-            },
-            {
-                question: "Nabi yang diberikan mukjizat berupa tongkat yang dapat membelah lautan adalah Nabi...?",
-                options: ["Nabi Ibrahim AS", "Nabi Musa AS", "Nabi Isa AS", "Nabi Nuh AS"],
-                answer: 1
-            },
-            {
-                question: "Malaikat yang bertugas meniup sangkakala tanda dimulainya hari kiamat adalah...?",
-                options: ["Malaikat Jibril", "Malaikat Mikail", "Malaikat Israfil", "Malaikat Izrail"],
-                answer: 2
-            }
-        ];
+                // Current active exam session state
+                activeExam: null,
+                currentQuestionIndex: 0,
+                userAnswers: {},
+                flaggedQuestions: {},
+                timeLeft: 0,
+                timerInterval: null,
+                startTime: null,
 
-        let currentQuestionIndex = 0;
-        let score = 0;
-        let timer;
-        let timeLeft = 30;
-        let answered = false;
-        let participantName = "";
-
-        function startQuiz() {
-            const nameInput = document.getElementById('participant-name').value.trim();
-            if (!nameInput) {
-                alert("Silakan masukkan nama lengkap Anda terlebih dahulu!");
-                return;
-            }
-            participantName = nameInput;
-
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-            currentQuestionIndex = 0;
-            score = 0;
-            loadQuestion();
-        }
-
-        function loadQuestion() {
-            resetState();
-            if (currentQuestionIndex < questions.length) {
-                document.getElementById('question-number').innerText = `Soal ${currentQuestionIndex + 1} dari ${questions.length}`;
-                const currentQ = questions[currentQuestionIndex];
-                document.getElementById('question-text').innerText = currentQ.question;
-                
-                const optionsContainer = document.getElementById('options-container');
-                optionsContainer.innerHTML = '';
-                
-                currentQ.options.forEach((option, index) => {
-                    const button = document.createElement('button');
-                    button.innerText = option;
-                    button.className = "w-full text-left p-3.5 rounded-xl border border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 transition duration-150 font-medium text-sm";
-                    button.onclick = () => selectOption(index);
-                    optionsContainer.appendChild(button);
-                });
-                startTimer();
-            } else {
-                showResult();
-            }
-        }
-
-        function resetState() {
-            clearInterval(timer);
-            timeLeft = 30;
-            document.getElementById('timer').innerText = `Waktu: ${timeLeft}s`;
-            document.getElementById('next-btn').classList.add('hidden');
-            answered = false;
-        }
-
-        function startTimer() {
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timer').innerText = `Waktu: ${timeLeft}s`;
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    lockAnswers(null);
-                }
-            }, 1000);
-        }
-
-        function selectOption(selectedIndex) {
-            if (answered) return;
-            answered = true;
-            clearInterval(timer);
-            lockAnswers(selectedIndex);
-        }
-
-        function lockAnswers(selectedIndex) {
-            const currentQ = questions[currentQuestionIndex];
-            const optionsContainer = document.getElementById('options-container');
-            const buttons = optionsContainer.children;
-
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].disabled = true;
-                if (i === currentQ.answer) {
-                    buttons[i].classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800', 'font-bold');
-                } else if (i === selectedIndex) {
-                    buttons[i].classList.add('bg-red-100', 'border-red-500', 'text-red-800');
-                }
-            }
-
-            if (selectedIndex === currentQ.answer) {
-                score += 20;
-            }
-
-            document.getElementById('next-btn').classList.remove('hidden');
-        }
-
-        function nextQuestion() {
-            currentQuestionIndex++;
-            loadQuestion();
-        }
-
-        function showResult() {
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('score-display').innerText = score;
-
-            // Kirim data nilai otomatis ke Google Sheet via Web App
-            sendScoreToGoogleSheet(participantName, score);
-        }
-
-        function sendScoreToGoogleSheet(name, finalScore) {
-            if (WEB_APP_URL === "URL_WEB_APP_ANDA_DISINI") return;
-
-            fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "no-cors", // Diperlukan agar tidak terkena blokir CORS dari GitHub Pages
-                headers: {
-                    "Content-Type": "application/json"
+                // AI Generation prompt model
+                aiPrompt: {
+                    topic: '',
+                    grade: 'SD',
+                    count: '10',
+                    duration: 15
                 },
-                body: JSON.stringify({ nama: name, skor: finalScore })
-            }).catch(error => {
-                console.error("Gagal mengirim nilai:", error);
-            });
-        }
 
-        function restartQuiz() {
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-            document.getElementById('participant-name').value = "";
+                // Final Report state
+                lastReport: {
+                    title: '',
+                    score: 0,
+                    correctCount: 0,
+                    wrongCount: 0,
+                    timeTaken: '',
+                    date: '',
+                    questions: [],
+                    userAnswers: {}
+                },
+                showReview: false,
+
+                // Saved history
+                examHistory: JSON.parse(localStorage.getItem('examiq_history') || '[]'),
+
+                // Built-in MAPSI SD PAI & BTQ Bank (100 Questions Sample Dataset based on provided Syllabus)
+                presetExams: [
+                    {
+                        id: 'mapsi-sd-100',
+                        title: 'Simulasi Lomba MAPSI SD (PAI & BTQ)',
+                        category: 'MAPSI SD',
+                        description: 'Soal komprehensif Al-Qur\'an Hadits, Aqidah, Akhlak, Fiqih, Sejarah Peradaban Islam, dan Tajwid BTQ.',
+                        timeMinutes: 60,
+                        questions: [
+                            // Al-Qur'an Hadits
+                            {
+                                question: 'Surah Al-Fātiḥah merupakan surah pertama dalam Al-Qur\'an yang dinamakan Ummul Qur\'an. Kata "Al-Fātiḥah" secara bahasa artinya adalah ...',
+                                options: ['Pertolongan', 'Pembukaan', 'Pembersihan', 'Kenikmatan'],
+                                correctAnswer: 1,
+                                category: 'Al-Qur\'an Hadits',
+                                explanation: 'Al-Fātiḥah berasal dari kata fataḥa yang berarti pembukaan, karena letaknya di awal Al-Qur\'an.'
+                            },
+                            {
+                                question: 'Surah An-Nās mengajarkan kita untuk memohon perlindungan kepada Allah dari kejahatan ...',
+                                options: ['Sihir dan dengki', 'Setan dan bisikan manusia', 'Pencuri dan pembegal', 'Bencana alam'],
+                                correctAnswer: 1,
+                                category: 'Al-Qur\'an Hadits',
+                                explanation: 'Surah An-Nās menjelaskan perlindungan dari bisikan (was-was) setan dan manusia.'
+                            },
+                            {
+                                question: 'Lafal "Qul huwallāhu aḥad" terdapat dalam surah Al-Ikhlāṣ yang menjelaskan tentang esensi pokok ajaran ...',
+                                options: ['Tauhid / Keesaan Allah', 'Hari Akhir', 'Kisah Para Nabi', 'Zakat dan Sedekah'],
+                                correctAnswer: 0,
+                                category: 'Al-Qur\'an Hadits',
+                                explanation: 'Surah Al-Ikhlas menegaskan kemurnian tauhid bahwa Allah itu Maha Esa.'
+                            },
+                            {
+                                question: 'Surah Al-Mā\'ūn menyebutkan ciri-ciri orang yang mendustakan agama, salah satunya adalah ...',
+                                options: ['Suka berganti pakaian', 'Menghardik anak yatim', 'Malas bekerja', 'Tidur berlebihan'],
+                                correctAnswer: 1,
+                                category: 'Al-Qur\'an Hadits',
+                                explanation: 'Salah satu ciri pendusta agama dalam surah Al-Mā\'ūn adalah menghardik anak yatim dan enggan menolong.'
+                            },
+                            {
+                                question: 'Pasukan bergajah yang dipimpin Abrahah untuk menghancurkan Ka\'bah dihancurkan oleh Allah menggunakan burung Ababil sebagaimana dikisahkan dalam surah ...',
+                                options: ['Al-Qāri\'ah', 'Al-Fīl', 'Al-Qadr', 'Al-Humazah'],
+                                correctAnswer: 1,
+                                category: 'Al-Qur\'an Hadits',
+                                explanation: 'Surah Al-Fīl menceritakan peristiwa pasukan bergajah Abrahah.'
+                            },
+                            // Aqidah
+                            {
+                                question: 'Allah SWT memiliki As-Samī\' yang berarti Allah Maha ...',
+                                options: ['Melihat', 'Mendengar', 'Mengetahui', 'Penyayang'],
+                                correctAnswer: 1,
+                                category: 'Aqidah',
+                                explanation: 'As-Samī\' adalah Asmaul Husna yang artinya Maha Mendengar.'
+                            },
+                            {
+                                question: 'Malaikat yang bertugas menyampaikan wahyu kepada para Nabi dan Rasul adalah Malaikat ...',
+                                options: ['Mikail', 'Israfil', 'Jibril', 'Izrail'],
+                                correctAnswer: 2,
+                                category: 'Aqidah',
+                                explanation: 'Malaikat Jibril bertugas menyampaikan wahyu.'
+                            },
+                            {
+                                question: 'Kitab suci Al-Qur\'an diturunkan Allah kepada Nabi ...',
+                                options: ['Musa a.s', 'Isa a.s', 'Daud a.s', 'Muhammad saw'],
+                                correctAnswer: 3,
+                                category: 'Aqidah',
+                                explanation: 'Al-Qur\'an diturunkan kepada Nabi Muhammad saw sebagai kitab suci terakhir.'
+                            },
+                            // Akhlak
+                            {
+                                question: 'Sikap merasakan apa yang dirasakan oleh orang lain dan ikut membantu kesusahan mereka dinamakan sikap ...',
+                                options: ['Empati', 'Sombong', 'Riya', 'Apatis'],
+                                correctAnswer: 0,
+                                category: 'Akhlak',
+                                explanation: 'Empati adalah kemampuan memahami dan merasakan perasaan orang lain.'
+                            },
+                            {
+                                question: 'Mengucapkan ucapan "Alḥamdulillāh" setelah selesai makan atau mendapat nikmat termasuk wujud ...',
+                                options: ['Takabur', 'Bersyukur', 'Mengeluh', 'Pamer'],
+                                correctAnswer: 1,
+                                category: 'Akhlak',
+                                explanation: 'Hamdalah adalah kalimat thoyyibah ungkapan rasa syukur atas nikmat Allah.'
+                            },
+                            // Fiqih
+                            {
+                                question: 'Panggilan atau penanda bahwasanya waktu salat fardu telah masuk disebut ...',
+                                options: ['Ikamah', 'Azan', 'Khutbah', 'Takbiratul Ihram'],
+                                correctAnswer: 1,
+                                category: 'Fiqih',
+                                explanation: 'Azan adalah panggilan penanda masuknya waktu salat fardu.'
+                            },
+                            {
+                                question: 'Bersuci dari hadas kecil menggunakan air bersih atau mengusapkan debu suci (tayamum) disebut ...',
+                                options: ['Istinja', 'Wudu', 'Bersuci (Thaharah)', 'Mandi Janabah'],
+                                correctAnswer: 2,
+                                category: 'Fiqih',
+                                explanation: 'Thaharah secara umum artinya bersuci dari hadas dan najis.'
+                            },
+                            // SPI & BTQ
+                            {
+                                question: 'Nabi pertama yang diciptakan oleh Allah SWT sekaligus manusia pertama di bumi adalah ...',
+                                options: ['Nabi Nuh a.s', 'Nabi Ibrahim a.s', 'Nabi Adam a.s', 'Nabi Idris a.s'],
+                                correctAnswer: 2,
+                                category: 'Sejarah Islam',
+                                explanation: 'Nabi Adam a.s adalah manusia dan nabi pertama.'
+                            },
+                            {
+                                question: 'Apabila nun sukun (نْ) bertemu dengan huruf ba (ب), maka hukum bacaannya adalah ...',
+                                options: ['Izhar Halqi', 'Iqlab', 'Idgham Bigunnah', 'Ikhfa Haqiqi'],
+                                correctAnswer: 1,
+                                category: 'BTQ (Tajwid)',
+                                explanation: 'Nun sukun bertemu ba dinamakan Iqlab (suara nun diganti mim sukun).'
+                            },
+                            {
+                                question: 'Hukum bacaan Qalqalah artinya bunyi huruf yang memantul. Salah satu huruf qalqalah adalah ...',
+                                options: ['Qaf (ق)', 'Sin (س)', 'Mim (م)', 'Lam (ل)'],
+                                correctAnswer: 0,
+                                category: 'BTQ (Tajwid)',
+                                explanation: 'Huruf Qalqalah ada 5: Baju Di Toko (ب, ج, د, ط, ق).'
+                            }
+                        ]
+                    }
+                ],
+
+                async generateQuestionsWithAI() {
+                    if (!this.aiPrompt.topic) return;
+                    this.isGeneratingAI = true;
+
+                    const promptText = `Buatkan ${this.aiPrompt.count} soal pilihan ganda (A, B, C, D) untuk ujian kelas/jenjang ${this.aiPrompt.grade} tentang topik: "${this.aiPrompt.topic}".
+                    Setiap soal harus menyertakan opsi jawaban, indeks jawaban benar (0=A, 1=B, 2=C, 3=D), dan pembahasan ringkas.
+                    Format output WAJIB JSON persis sesuai struktur ini:
+                    {
+                      "title": "Ujian AI: ${this.aiPrompt.topic}",
+                      "questions": [
+                        {
+                          "question": "Teks soal?",
+                          "options": ["Opsi A", "Opsi B", "Opsi C", "Opsi D"],
+                          "correctAnswer": 0,
+                          "category": "${this.aiPrompt.topic}",
+                          "explanation": "Penjelasan singkat."
+                        }
+                      ]
+                    }`;
+
+                    try {
+                        const key = this.apiKey || "";
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`;
+                        
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: promptText }] }],
+                                generationConfig: { responseMimeType: "application/json" }
+                            })
+                        });
+
+                        const result = await response.json();
+                        const rawJson = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (rawJson) {
+                            const parsed = JSON.parse(rawJson);
+                            const newExam = {
+                                id: 'ai-exam-' + Date.now(),
+                                title: parsed.title || `Ujian ${this.aiPrompt.topic}`,
+                                category: 'AI Generated',
+                                description: `Soal ujian kustom topik ${this.aiPrompt.topic}`,
+                                timeMinutes: parseInt(this.aiPrompt.duration) || 15,
+                                questions: parsed.questions
+                            };
+
+                            this.presetExams.unshift(newExam);
+                            this.showAIGeneratorModal = false;
+                            this.selectAndStartExam(newExam);
+                        } else {
+                            alert('Gagal meregenerasi soal dari AI. Pastikan format atau jaringan stabil.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Terjadi kesalahan koneksi API Gemini.');
+                    } finally {
+                        this.isGeneratingAI = false;
+                    }
+                },
+
+                // Exam Lifecycle Handlers
+                startPresetExam(type) {
+                    if (type === 'mapsi') {
+                        this.selectAndStartExam(this.presetExams[0]);
+                    }
+                },
+
+                selectAndStartExam(exam) {
+                    this.activeExam = exam;
+                    this.currentQuestionIndex = 0;
+                    this.userAnswers = {};
+                    this.flaggedQuestions = {};
+                    this.timeLeft = exam.timeMinutes * 60;
+                    this.startTime = new Date();
+
+                    this.currentScreen = 'exam';
+                    this.startTimer();
+                },
+
+                startTimer() {
+                    if (this.timerInterval) clearInterval(this.timerInterval);
+                    this.timerInterval = setInterval(() => {
+                        if (this.timeLeft > 0) {
+                            this.timeLeft--;
+                        } else {
+                            clearInterval(this.timerInterval);
+                            this.finishExam();
+                        }
+                    }, 1000);
+                },
+
+                formatTime(seconds) {
+                    const m = Math.floor(seconds / 60);
+                    const s = seconds % 60;
+                    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+                },
+
+                get currentQuestion() {
+                    return this.activeExam ? this.activeExam.questions[this.currentQuestionIndex] : {};
+                },
+
+                selectAnswer(qIdx, optionIdx) {
+                    this.userAnswers[qIdx] = optionIdx;
+                },
+
+                toggleFlag(qIdx) {
+                    this.flaggedQuestions[qIdx] = !this.flaggedQuestions[qIdx];
+                },
+
+                nextQuestion() {
+                    if (this.activeExam && this.currentQuestionIndex < this.activeExam.questions.length - 1) {
+                        this.currentQuestionIndex++;
+                    }
+                },
+
+                prevQuestion() {
+                    if (this.currentQuestionIndex > 0) {
+                        this.currentQuestionIndex--;
+                    }
+                },
+
+                jumpToQuestion(index) {
+                    this.currentQuestionIndex = index;
+                },
+
+                getAnsweredCount() {
+                    return Object.keys(this.userAnswers).length;
+                },
+
+                confirmFinishExam() {
+                    if (confirm('Apakah Anda yakin ingin menyelesaikan dan mengumpulkan ujian ini sekarang?')) {
+                        this.finishExam();
+                    }
+                },
+
+                finishExam() {
+                    if (this.timerInterval) clearInterval(this.timerInterval);
+
+                    let correctCount = 0;
+                    const totalQ = this.activeExam.questions.length;
+
+                    this.activeExam.questions.forEach((q, idx) => {
+                        if (this.userAnswers[idx] === q.correctAnswer) {
+                            correctCount++;
+                        }
+                    });
+
+                    const finalScore = Math.round((correctCount / totalQ) * 100);
+                    const timeElapsedSec = (this.activeExam.timeMinutes * 60) - this.timeLeft;
+
+                    this.lastReport = {
+                        title: this.activeExam.title,
+                        score: finalScore,
+                        correctCount: correctCount,
+                        wrongCount: totalQ - correctCount,
+                        timeTaken: `${Math.floor(timeElapsedSec / 60)} mnt ${timeElapsedSec % 60} det`,
+                        date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                        questions: this.activeExam.questions,
+                        userAnswers: { ...this.userAnswers }
+                    };
+
+                    // Save history
+                    this.examHistory.unshift(this.lastReport);
+                    localStorage.setItem('examiq_history', JSON.stringify(this.examHistory.slice(0, 10)));
+
+                    this.currentScreen = 'report';
+                },
+
+                toggleReviewMode() {
+                    this.showReview = !this.showReview;
+                },
+
+                viewHistoryDetail(hist) {
+                    this.lastReport = hist;
+                    this.showReview = true;
+                    this.currentScreen = 'report';
+                },
+
+                goHome() {
+                    if (this.timerInterval) clearInterval(this.timerInterval);
+                    this.currentScreen = 'dashboard';
+                },
+
+                openAIGeneratorModal() {
+                    this.showAIGeneratorModal = true;
+                },
+
+                openSettingsModal() {
+                    this.showSettingsModal = true;
+                },
+
+                saveApiKey() {
+                    localStorage.setItem('examiq_gemini_key', this.apiKey);
+                    this.showSettingsModal = false;
+                }
+            }
         }
     </script>
 </body>
